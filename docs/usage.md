@@ -230,10 +230,22 @@ refresh("x")  # type error: refresh is typed as taking no arguments
 
 The types come from overloads of `Signal`. Every number of emitted types needs
 its own set of overloads, so they stop at five types. A signal declared with
-more than five types or with an `inspect.Signature` is therefore untyped, with
-the type `SignalInstance[*tuple[Any, ...]]`, and so is a `SignalInstance`
-created directly instead of through a `Signal` attribute. The checker accepts
-any arguments and any slot on an untyped signal.
+more than five types or with an `inspect.Signature` is therefore untyped, and
+so is a `SignalInstance` created directly instead of through a `Signal`
+attribute, a signal looked up by name in a `SignalGroup`, and the `all` relay of
+a group. An untyped signal has the type `SignalInstance[Never]`. `Never` is
+used because no emitted type can be mistaken for it, which lets the checker
+tell an untyped signal from a typed one. The checker accepts any arguments and
+any slot on an untyped signal, and `connect` returns the slot with its own
+signature.
+
+mypy loses that signature in one case: a slot that mentions `Any` and can be
+called with a single positional argument is returned as
+`def (*Any, **Any) -> Any`. pyright keeps it.
+
+pyright does not let an untyped signal be assigned to a variable declared with
+emitted types, such as `SignalInstance[int]`, while mypy does. A variable
+declared as plain `SignalInstance` holds either kind in both checkers.
 
 #### Upgrading
 

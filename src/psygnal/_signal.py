@@ -168,7 +168,7 @@ from ._weak_callback import (
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator
-    from typing import TypeAlias, Unpack
+    from typing import Never, TypeAlias, Unpack
 
     from typing_extensions import TypeForm
 
@@ -309,7 +309,7 @@ class Signal(Generic[*Ts]):
 
     @overload
     def __init__(
-        self: Signal[*tuple[Any, ...]],
+        self: Signal[Never],
         signature: Signature,
         /,
         **kwargs: Unpack[SignalKwargs],
@@ -373,7 +373,7 @@ class Signal(Generic[*Ts]):
 
     @overload
     def __init__(
-        self: Signal[*tuple[Any, ...]],
+        self: Signal[Never],
         *types: TypeForm[Any] | Signature,
         **kwargs: Unpack[SignalKwargs],
     ) -> None: ...
@@ -611,7 +611,7 @@ class SignalInstance(Generic[*Ts]):
     _debug_hook: ClassVar[Callable[[EmissionInfo], None] | None] = None
 
     def __init__(
-        self: SignalInstance[*tuple[Any, ...]],
+        self: SignalInstance[Never],
         signature: Signature | tuple = _empty_signature,
         *,
         instance: Any = None,
@@ -691,6 +691,19 @@ class SignalInstance(Generic[*Ts]):
         name = f" {self._name!r}" if self._name else ""
         instance = f" on {self.instance!r}" if self.instance is not None else ""
         return f"<{type(self).__name__}{name}{instance}>"
+
+    @overload
+    def connect(
+        self: SignalInstance[Never],
+        **kwargs: Unpack[ConnectKwargs],
+    ) -> Callable[[F], F]: ...
+
+    @overload
+    def connect(
+        self: SignalInstance[Never],
+        slot: F,
+        **kwargs: Unpack[ConnectKwargs],
+    ) -> F: ...
 
     @overload
     def connect(
@@ -1289,6 +1302,19 @@ class SignalInstance(Generic[*Ts]):
         """Return number of connected slots."""
         return len(self._slots)
 
+    @overload
+    def emit(
+        self: SignalInstance[Never],
+        *args: Any,
+        check_nargs: bool = False,
+        check_types: bool = False,
+    ) -> None: ...
+
+    @overload
+    def emit(
+        self, *args: *Ts, check_nargs: bool = False, check_types: bool = False
+    ) -> None: ...
+
     def emit(
         self, *args: *Ts, check_nargs: bool = False, check_types: bool = False
     ) -> None:
@@ -1355,6 +1381,12 @@ class SignalInstance(Generic[*Ts]):
 
         self._run_emit_loop(args)
 
+    @overload
+    def emit_fast(self: SignalInstance[Never], *args: Any) -> None: ...
+
+    @overload
+    def emit_fast(self, *args: *Ts) -> None: ...
+
     def emit_fast(self, *args: *Ts) -> None:
         """Fast emit without any checks.
 
@@ -1409,6 +1441,19 @@ class SignalInstance(Generic[*Ts]):
         finally:
             if self._recursion_depth > 0:
                 self._recursion_depth -= 1
+
+    @overload
+    def __call__(
+        self: SignalInstance[Never],
+        *args: Any,
+        check_nargs: bool = False,
+        check_types: bool = False,
+    ) -> None: ...
+
+    @overload
+    def __call__(
+        self, *args: *Ts, check_nargs: bool = False, check_types: bool = False
+    ) -> None: ...
 
     def __call__(
         self, *args: *Ts, check_nargs: bool = False, check_types: bool = False

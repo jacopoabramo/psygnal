@@ -9,9 +9,9 @@ fail the run when one does not.
 from collections.abc import Callable
 from functools import partial
 from inspect import Signature
-from typing import Any, assert_type
+from typing import Any, Never, assert_type
 
-from psygnal import Signal, SignalInstance
+from psygnal import Signal, SignalGroup, SignalInstance
 from psygnal.containers import EventedObjectProxy, Selection
 
 
@@ -31,8 +31,8 @@ assert_type(m.one, SignalInstance[int])
 assert_type(m.zero, SignalInstance[()])
 assert_type(m.union, SignalInstance[str | None])
 assert_type(m.two, SignalInstance[int, list[str]])
-assert_type(m.raw, SignalInstance[*tuple[Any, ...]])
-assert_type(SignalInstance((int,)), SignalInstance[*tuple[Any, ...]])
+assert_type(m.raw, SignalInstance[Never])
+assert_type(SignalInstance((int,)), SignalInstance[Never])
 
 m.one.emit(1)
 m.one.emit(1, check_nargs=True, check_types=True)
@@ -132,7 +132,26 @@ def untyped_options(a: int, b: str, flag: bool = False) -> None:
 
 
 untyped_options(1, "x", flag=True)
+untyped_options("x")  # type: ignore
 m.raw.connect(on_three)
+m.raw.emit(1, "x", None)
+m.raw.emit_fast()
+m.raw(1)
+
+
+def returns_any(a: int, b: str) -> Any:
+    """Mention Any, which must not cost the slot its signature."""
+
+
+class Group(SignalGroup):
+    """Group whose signals are reached by name."""
+
+    value = Signal(int)
+
+
+m.raw.connect(returns_any)("a", "b")  # type: ignore
+Group()["value"].connect(returns_any)("a", "b")  # type: ignore
+Group().all.connect(returns_any)("a", "b")  # type: ignore
 
 
 def on_optional_int(v: int | None) -> None:

@@ -18,7 +18,7 @@
     s2 = Signal(object)
     s3 = Signal(Signature())
     reveal_type(s1)  # N: Revealed type is "psygnal._signal.Signal[int, str]"
-    reveal_type(s3)  # N: Revealed type is "psygnal._signal.Signal[*tuple[Any, ...]]"
+    reveal_type(s3)  # N: Revealed type is "psygnal._signal.Signal[Never]"
 
 - case: signal_connection
   main: |
@@ -28,7 +28,7 @@
 
     def a(x: int, y: str) -> Any: ...
     x = s.connect(a)
-    reveal_type(x)  # N: Revealed type is "def (*Any, **Any) -> Any"
+    reveal_type(x)  # N: Revealed type is "def (x: int, y: str) -> Any"
 
     @s.connect
     def b(x: str) -> int: return 1
@@ -36,7 +36,7 @@
 
     def c(x: int, y: str) -> Any: ...
     y = s.connect(c, check_nargs=False)
-    reveal_type(y)  # N: Revealed type is "def (*Any, **Any) -> Any"
+    reveal_type(y)  # N: Revealed type is "def (x: int, y: str) -> Any"
 
     @s.connect(check_nargs=False)
     def d(x: str) -> None: ...
