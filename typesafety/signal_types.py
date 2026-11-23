@@ -11,7 +11,7 @@ from functools import partial
 from inspect import Signature
 from typing import Any, Never, assert_type
 
-from psygnal import Signal, SignalGroup, SignalInstance
+from psygnal import EmissionInfo, Signal, SignalGroup, SignalInstance
 from psygnal.containers import EventedObjectProxy, Selection
 
 
@@ -149,9 +149,21 @@ class Group(SignalGroup):
     value = Signal(int)
 
 
-m.raw.connect(returns_any)("a", "b")  # type: ignore
-Group()["value"].connect(returns_any)("a", "b")  # type: ignore
-Group().all.connect(returns_any)("a", "b")  # type: ignore
+kept = m.raw.connect(returns_any)
+kept(1, "x")
+kept("a", "b")  # type: ignore
+
+by_name = Group()["value"].connect(returns_any)
+by_name(1, "x")
+by_name("a", "b")  # type: ignore
+
+
+def on_info(info: EmissionInfo) -> Any:
+    """Take what the relay emits."""
+
+
+relayed = Group().all.connect(on_info)
+relayed(1)  # type: ignore
 
 
 def on_optional_int(v: int | None) -> None:
